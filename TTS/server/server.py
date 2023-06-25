@@ -197,6 +197,24 @@ def tts():
     return send_file(out, mimetype="audio/wav")
 
 
+# Additional API endpoints for better programatic use
+@app.route("/api/languages", methods=["GET"])
+def api_locales():
+    print("languages")
+    if(use_multi_language and language_manager is not None):
+        return [ e.strip() for e in list(language_manager.name_to_id.keys()) ]
+    else:
+        return []
+
+
+@app.route("/api/speakers", methods=["GET"])
+def api_speakers():
+    print("Speakers")
+    if(speaker_manager is not None):
+        return [ e.strip() for e in list(speaker_manager.name_to_id.keys()) ]
+    else:
+        return []
+
 # Basic MaryTTS compatibility layer
 
 
