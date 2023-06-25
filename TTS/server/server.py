@@ -202,7 +202,7 @@ def tts():
 def api_locales():
     print("languages")
     if(use_multi_language and language_manager is not None):
-        return [ e.strip() for e in list(language_manager.name_to_id.keys()) ]
+        return list(language_manager.name_to_id.keys())
     else:
         return []
 
@@ -211,7 +211,7 @@ def api_locales():
 def api_speakers():
     print("Speakers")
     if(speaker_manager is not None):
-        return [ e.strip() for e in list(speaker_manager.name_to_id.keys()) ]
+        return list(speaker_manager.name_to_id.keys())
     else:
         return []
 
