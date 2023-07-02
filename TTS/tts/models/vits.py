@@ -39,6 +39,7 @@ from TTS.vocoder.models.hifigan_generator import HifiganGenerator
 from TTS.vocoder.utils.generic_utils import plot_results
 
 from rknnlite.api import RKNNLite
+import numpy
 
 ##############################
 # IO / Feature extraction
@@ -1164,13 +1165,14 @@ class Vits(BaseTTS):
         # o = self.waveform_decoder(hifi_x, g=g)
         # loading this inline for now
         try:
+            #TODO: Put the loading of the model in the initialization of the class.
             rknn_file = '/workspace/your_tts.rknn'
-            r = RKNNLite(verbose=True)
+            r = RKNNLite(verbose=False)
             # r.config(target_platform='rk3588')
             r.load_rknn(rknn_file)
-            r.init_runtime(core_mask=RKNNLite.NPU_CORE_AUTO) #perf_debug=True, eval_mem=True, target='rk3588s', 
+            r.init_runtime(core_mask=RKNNLite.NPU_CORE_0_1_2) #perf_debug=True, eval_mem=True, target='rk3588s', 
             outputs1 = r.inference(inputs=[hifi_x.numpy(), g.numpy()])
-            outputs2 = torch.tensor(outputs1).squeeze(1)
+            outputs2 = torch.tensor(numpy.array(outputs1)).squeeze(1)
         except Exception as e:
             print("Caught exception while running rknn ")
             print(e)
@@ -1188,7 +1190,7 @@ class Vits(BaseTTS):
             "logs_p": logs_p,
             "y_mask": y_mask,
         }
-        
+
         return outputs
 
     @torch.no_grad()
