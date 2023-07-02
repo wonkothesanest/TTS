@@ -38,7 +38,7 @@ from TTS.utils.samplers import BucketBatchSampler
 from TTS.vocoder.models.hifigan_generator import HifiganGenerator
 from TTS.vocoder.utils.generic_utils import plot_results
 
-from rknn.api import RKNN
+from rknnlite.api import RKNNLite
 
 ##############################
 # IO / Feature extraction
@@ -1165,10 +1165,10 @@ class Vits(BaseTTS):
         # loading this inline for now
         try:
             rknn_file = '/workspace/your_tts.rknn'
-            r = RKNN(verbose=True)
-            r.config(target_platform='rk3588')
+            r = RKNNLite(verbose=True)
+            # r.config(target_platform='rk3588')
             r.load_rknn(rknn_file)
-            r.init_runtime(perf_debug=True, eval_mem=True, target='rk3588s', core_mask=RKNN.NPU_CORE_AUTO)
+            r.init_runtime(core_mask=RKNNLite.NPU_CORE_AUTO) #perf_debug=True, eval_mem=True, target='rk3588s', 
             outputs1 = r.inference(inputs=[x.numpy(), g.numpy()])
             outputs2 = torch.tensor(outputs1).squeeze(1)
         except Exception as e:

@@ -12,6 +12,22 @@
             "console": "integratedTerminal",
             "justMyCode": true,"args": ["--model_name", "tts_models/multilingual/multi-dataset/your_tts", "--speaker_idx", "male-en-2", "--language_idx","en", "--text", 
                 "The quick brown fox jumped over the lazy dog."]
+        },
+        {
+            "name": "Python: Remote Attach",
+            "type": "python",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}",
+                    "remoteRoot": "."
+                }
+            ],
+            "justMyCode": false
         }
     ]
 }
