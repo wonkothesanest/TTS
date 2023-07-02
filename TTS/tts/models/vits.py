@@ -1169,10 +1169,11 @@ class Vits(BaseTTS):
             # r.config(target_platform='rk3588')
             r.load_rknn(rknn_file)
             r.init_runtime(core_mask=RKNNLite.NPU_CORE_AUTO) #perf_debug=True, eval_mem=True, target='rk3588s', 
-            outputs1 = r.inference(inputs=[x.numpy(), g.numpy()])
+            outputs1 = r.inference(inputs=[hifi_x.numpy(), g.numpy()])
             outputs2 = torch.tensor(outputs1).squeeze(1)
         except Exception as e:
-            print("Caught exception while running rknn " + e)
+            print("Caught exception while running rknn ")
+            print(e)
             raise e
         finally:
             r.release()
