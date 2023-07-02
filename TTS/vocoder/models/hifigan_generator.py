@@ -232,6 +232,26 @@ class HifiganGenerator(torch.nn.Module):
         if not conv_post_weight_norm:
             remove_weight_norm(self.conv_post)
 
+
+    def __remove_weight_norms__(self, conv):
+        try:
+            for hook in conv._forward_pre_hooks.values():
+                # The hook we want to remove is an instance of WeightNorm class, so
+                # normally we would do `if isinstance(...)` but this class is not accessible
+                # because of shadowing, so we check the module name directly.
+                # https://github.com/pytorch/pytorch/blob/be0ca00c5ce260eb5bcec3237357f7a30cc08983/torch/nn/utils/__init__.py#L3
+                if hook.__module__ == "torch.nn.utils.weight_norm" and hook.__class__.__name__ == "WeightNorm":
+                    print("Removing weight_norm from %s", self.__class__.__name__)
+                    torch.nn.utils.remove_weight_norm(conv)
+                    return self
+        except Exception as e:
+            print("error removing weightnorm")
+            print(e)
+
+    def __prepare_scriptable__(self):
+        self.remove_weight_norm()
+        return self
+    
     def forward(self, x, g=None):
         """
         Args:
@@ -245,6 +265,7 @@ class HifiganGenerator(torch.nn.Module):
             x: [B, C, T]
             Tensor: [B, 1, T]
         """
+
         o = self.conv_pre(x)
         if hasattr(self, "cond_layer"):
             o = o + self.cond_layer(g)
@@ -283,11 +304,24 @@ class HifiganGenerator(torch.nn.Module):
     def remove_weight_norm(self):
         print("Removing weight norm...")
         for l in self.ups:
-            remove_weight_norm(l)
+            try:
+                remove_weight_norm(l)
+            except:
+                pass
         for l in self.resblocks:
-            l.remove_weight_norm()
-        remove_weight_norm(self.conv_pre)
-        remove_weight_norm(self.conv_post)
+            try:
+                l.remove_weight_norm()
+            except:
+                pass
+
+        try:
+            remove_weight_norm(self.conv_pre)
+        except:
+            pass    
+        try:
+            remove_weight_norm(self.conv_post)
+        except:
+            pass        
 
     def load_checkpoint(
         self, config, checkpoint_path, eval=False, cache=False

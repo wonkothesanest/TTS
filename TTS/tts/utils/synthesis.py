@@ -43,14 +43,12 @@ def run_model_torch(
         Dict: model outputs.
     """
     input_lengths = torch.tensor(inputs.shape[1:2]).to(inputs.device)
+
     if hasattr(model, "module"):
         _func = model.module.inference
     else:
         _func = model.inference
-    import cProfile, pstats, io
-    from pstats import SortKey
-    pr = cProfile.Profile()
-    pr.enable()
+    
     outputs = _func(
         inputs,
         aux_input={
@@ -62,8 +60,8 @@ def run_model_torch(
             "language_ids": language_id,
         },
     )
-    pr.disable()
-    pr.print_stats(SortKey.CUMULATIVE)
+    
+
     return outputs
 
 

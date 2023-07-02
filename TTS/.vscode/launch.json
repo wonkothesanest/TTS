@@ -1,0 +1,17 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "bin/synthesize.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,"args": ["--model_name", "tts_models/multilingual/multi-dataset/your_tts", "--speaker_idx", "male-en-2", "--language_idx","en", "--text", 
+                "The quick brown fox jumped over the lazy dog."]
+        }
+    ]
+}

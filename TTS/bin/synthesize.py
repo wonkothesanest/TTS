@@ -108,6 +108,7 @@ If you don't specify any models, then it uses LJSpeech based English model.
     $ tts --out_path output/path/speech.wav --model_name "<language>/<dataset>/<model_name>" --source_wav <path/to/speaker/wav> --target_wav <path/to/reference/wav>
     ```
     """
+    
     # We remove Markdown code formatting programmatically here to allow us to copy-and-paste from main README to keep
     # documentation in sync more easily.
     parser = argparse.ArgumentParser(
@@ -426,6 +427,11 @@ If you don't specify any models, then it uses LJSpeech based English model.
     if args.text:
         print(" > Text: {}".format(args.text))
 
+    import cProfile, pstats, io
+    from pstats import SortKey
+    pr = cProfile.Profile()
+    print("starting timing")
+    pr.enable()
     # kick it
     if tts_path is not None:
         wav = synthesizer.tts(
@@ -445,7 +451,11 @@ If you don't specify any models, then it uses LJSpeech based English model.
         )
     elif model_dir is not None:
         wav = synthesizer.tts(args.text, speaker_name=args.speaker_idx)
-
+    
+    pr.disable()
+    # pr.print_stats(SortKey.CUMULATIVE)
+    pr.create_stats()
+    pstats.Stats(pr).strip_dirs().sort_stats(SortKey.CUMULATIVE).print_stats(100)
     # save the results
     print(" > Saving output to {}".format(args.out_path))
     synthesizer.save_wav(wav, args.out_path)

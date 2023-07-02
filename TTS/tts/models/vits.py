@@ -1157,9 +1157,20 @@ class Vits(BaseTTS):
 
         # upsampling if needed
         z, _, _, y_mask = self.upsampling_z(z, y_lengths=y_lengths, y_mask=y_mask)
-
-        o = self.waveform_decoder((z * y_mask)[:, :, : self.max_inference_len], g=g)
-
+        hifi_x = (z * y_mask)[:, :, : self.max_inference_len]
+        o = self.waveform_decoder(hifi_x, g=g)
+        # with open('hifi_gan_model_traced.pt', 'rb') as f:
+        #     gan = torch.jit.load(f)
+        # o = gan.forward(hifi_x, g=g)
+        import pickle
+        isCreation = False
+        if(isCreation):
+            with open('../../inputs.pickle', 'wb') as f:
+                pickle.dump({"x": hifi_x, "g": g}, f)
+        else:
+            with open('../../outputs.pickle', 'rb') as f:
+                oo = pickle.load(f)
+            o = oo
         outputs = {
             "model_outputs": o,
             "alignments": attn.squeeze(1),
@@ -1170,6 +1181,39 @@ class Vits(BaseTTS):
             "logs_p": logs_p,
             "y_mask": y_mask,
         }
+        
+        """
+        
+        import pickle
+        with open("run_inputs.pickle", 'wb') as f:
+            pickle.dump(inputs, f)
+        jt = torch.jit.trace(model,(inputs, a_input))
+        jtm = torch.jit.trace_module(self,{"forward":(inputs, a_input)})
+        js = torch.jit.script(model,example_inputs=(inputs, a_input))
+        #with the addition of "g" we get a warning for the two traced onnx "Model has no forward function"
+        ot = torch.onnx.export(jt, (inputs,{"aux_input": a_input}), 'model_traced.onnx' )
+        otm = torch.onnx.export(jtm, (inputs, a_input), 'model_traced_module.onnx' )
+        os = torch.onnx.export(js,(inputs, a_input), 'model_scripted.onnx' )
+
+        jt.save('model_traced.pt')
+        jtm.save('model_traced_module.pt')
+        js.save('model_scripted.pt')
+        """
+        """
+        with open("hifi_gan_inputs.pickle", 'wb') as f: pickle.dump({"x": x, "g": g}, f)
+        """
+        # import pickle
+        # with open("hifi_gan_inputs.pickle", 'wb') as f: 
+        #     pickle.dump({"x": hifi_x, "g": g}, f)
+        # jt = torch.jit.trace(self.waveform_decoder,(hifi_x, g))
+        # jtm = torch.jit.trace_module(self.waveform_decoder,{"forward":(hifi_x, g)})
+        # jt.save('hifi_gan_model_traced.pt')
+        # jtm.save('hifi_gan_model_traced_module.pt')
+        # ot = torch.onnx.export(jt, (hifi_x,g), 'hifi_gan_model_traced.onnx' )
+        # otm = torch.onnx.export(jtm, (hifi_x,g), 'hifi_gan_model_traced_module.onnx' )
+        # with open("hifi_gan_outputs.pickle", 'wb') as f:
+        #     pickle.dump(outputs, f)
+        # scr = torch.jit.script(self.waveform_decoder,(hifi_x, g))
         return outputs
 
     @torch.no_grad()
