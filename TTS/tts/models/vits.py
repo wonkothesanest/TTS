@@ -38,6 +38,8 @@ from TTS.utils.samplers import BucketBatchSampler
 from TTS.vocoder.models.hifigan_generator import HifiganGenerator
 from TTS.vocoder.utils.generic_utils import plot_results
 
+from rknn.api import RKNN
+
 ##############################
 # IO / Feature extraction
 ##############################
@@ -1158,19 +1160,23 @@ class Vits(BaseTTS):
         # upsampling if needed
         z, _, _, y_mask = self.upsampling_z(z, y_lengths=y_lengths, y_mask=y_mask)
         hifi_x = (z * y_mask)[:, :, : self.max_inference_len]
-        o = self.waveform_decoder(hifi_x, g=g)
-        # with open('hifi_gan_model_traced.pt', 'rb') as f:
-        #     gan = torch.jit.load(f)
-        # o = gan.forward(hifi_x, g=g)
-        import pickle
-        isCreation = False
-        if(isCreation):
-            with open('../../inputs.pickle', 'wb') as f:
-                pickle.dump({"x": hifi_x, "g": g}, f)
-        else:
-            with open('../../outputs.pickle', 'rb') as f:
-                oo = pickle.load(f)
-            o = oo
+
+        # o = self.waveform_decoder(hifi_x, g=g)
+        # loading this inline for now
+        try:
+            rknn_file = '/workspace/your_tts.rknn'
+            r = RKNN(verbose=True)
+            r.config(target_platform='rk3588')
+            r.load_rknn(rknn_file)
+            r.init_runtime(perf_debug=True, eval_mem=True, target='rk3588s', core_mask=RKNN.NPU_CORE_AUTO)
+            outputs1 = r.inference(inputs=[x.numpy(), g.numpy()])
+            outputs2 = torch.tensor(outputs1).squeeze(1)
+        except Exception as e:
+            print("Caught exception while running rknn " + e)
+            raise e
+        finally:
+            r.release()
+        o = outputs2
         outputs = {
             "model_outputs": o,
             "alignments": attn.squeeze(1),
@@ -1182,38 +1188,6 @@ class Vits(BaseTTS):
             "y_mask": y_mask,
         }
         
-        """
-        
-        import pickle
-        with open("run_inputs.pickle", 'wb') as f:
-            pickle.dump(inputs, f)
-        jt = torch.jit.trace(model,(inputs, a_input))
-        jtm = torch.jit.trace_module(self,{"forward":(inputs, a_input)})
-        js = torch.jit.script(model,example_inputs=(inputs, a_input))
-        #with the addition of "g" we get a warning for the two traced onnx "Model has no forward function"
-        ot = torch.onnx.export(jt, (inputs,{"aux_input": a_input}), 'model_traced.onnx' )
-        otm = torch.onnx.export(jtm, (inputs, a_input), 'model_traced_module.onnx' )
-        os = torch.onnx.export(js,(inputs, a_input), 'model_scripted.onnx' )
-
-        jt.save('model_traced.pt')
-        jtm.save('model_traced_module.pt')
-        js.save('model_scripted.pt')
-        """
-        """
-        with open("hifi_gan_inputs.pickle", 'wb') as f: pickle.dump({"x": x, "g": g}, f)
-        """
-        # import pickle
-        # with open("hifi_gan_inputs.pickle", 'wb') as f: 
-        #     pickle.dump({"x": hifi_x, "g": g}, f)
-        # jt = torch.jit.trace(self.waveform_decoder,(hifi_x, g))
-        # jtm = torch.jit.trace_module(self.waveform_decoder,{"forward":(hifi_x, g)})
-        # jt.save('hifi_gan_model_traced.pt')
-        # jtm.save('hifi_gan_model_traced_module.pt')
-        # ot = torch.onnx.export(jt, (hifi_x,g), 'hifi_gan_model_traced.onnx' )
-        # otm = torch.onnx.export(jtm, (hifi_x,g), 'hifi_gan_model_traced_module.onnx' )
-        # with open("hifi_gan_outputs.pickle", 'wb') as f:
-        #     pickle.dump(outputs, f)
-        # scr = torch.jit.script(self.waveform_decoder,(hifi_x, g))
         return outputs
 
     @torch.no_grad()
